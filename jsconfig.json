@@ -1,7 +1,22 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
+      "@/components/*": ["./src/components/*"],
       "@/*": ["./src/*"]
-    }
-  }
+    },
+    "jsx": "preserve",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": true
+  },
+  "exclude": ["node_modules"]
 }
