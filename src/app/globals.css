@@ -22,6 +22,7 @@ body {
     background-position: center center;
     color: #fff;
     overflow-x: hidden;
+    overscroll-behavior-y: contain;
 }
 
 .container {

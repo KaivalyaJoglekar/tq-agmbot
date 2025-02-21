@@ -1,5 +1,4 @@
-// app/api/evaluate-profile/route.ts
-
+"use server";
 import { NextResponse } from 'next/server';
 import pdf2json from 'pdf2json';
 import axios from 'axios';
@@ -9,201 +8,192 @@ const MAX_RETRIES = 3;
 const BASE_DELAY = 1000; // in milliseconds
 
 async function generateContent(prompt: string): Promise<string> {
-    try {
-        const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }]
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-        return response.data.candidates[0].content.parts[0].text;
-    } catch (error) {
-        throw error;
-    }
+  try {
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return response.data.candidates[0].content.parts[0].text;
+  } catch (error) {
+    throw error;
+  }
 }
 
 async function evaluateWithRetry(
-    prompt: string,
-    maxRetries = MAX_RETRIES,
-    baseDelay = BASE_DELAY
+  prompt: string,
+  maxRetries = MAX_RETRIES,
+  baseDelay = BASE_DELAY
 ): Promise<any> {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const responseText = await generateContent(prompt);
+      if (responseText && responseText.trim()) {
+        let cleanedResponse = responseText.trim();
+
+        cleanedResponse = cleanedResponse.replace(/```json/g, '');
+        cleanedResponse = cleanedResponse.replace(/```/g, '');
+        cleanedResponse = cleanedResponse.replace(/\s+/g, ' ');
+        cleanedResponse = cleanedResponse.replace(/\\/g, '\\\\');
+        cleanedResponse = cleanedResponse.replace(/\\"/g, '"');
+        cleanedResponse = cleanedResponse.replace(/\n/g, '');
+        cleanedResponse = cleanedResponse.replace(/`/g, '').replace(/\*/g, '');
+
         try {
-            const responseText = await generateContent(prompt);
-            if (responseText && responseText.trim()) {
-                let cleanedResponse = responseText.trim();
+          return JSON.parse(cleanedResponse);
+        } catch (jsonError) {
+          console.error('JSON parse error, attempting to extract partial data.', jsonError);
 
-                // Enhanced Cleaning (Illustrative - Adapt as needed)
-                cleanedResponse = cleanedResponse.replace(/```json/g, ''); // remove json markdown tags
-                cleanedResponse = cleanedResponse.replace(/```/g, ''); // remove markdown tags
-                cleanedResponse = cleanedResponse.replace(/\s+/g, ' '); // Remove multiple whitespaces
-                cleanedResponse = cleanedResponse.replace(/\\/g, '\\\\'); // Escape backslashes
-                cleanedResponse = cleanedResponse.replace(/\\"/g, '"');  // handle escaped quotes
-                cleanedResponse = cleanedResponse.replace(/\n/g, '');   // Remove newlines
-                cleanedResponse = cleanedResponse.replace(/`/g, '').replace(/\*/g, ''); // remove asterisks and backticks
-
-
-                try {
-                    return JSON.parse(cleanedResponse);
-                } catch (jsonError) {
-                    console.error('JSON parse error, attempting to extract partial data.', jsonError);
-
-                    //  Basic Fallback: Attempt to extract values even if JSON is malformed
-                    try {
-                        //  This is a simplistic example - improve based on likely malformed structures
-                        const summaryMatch = cleanedResponse.match(/"summary":\s*"([^"]*)"/i);
-                        const verdictMatch = cleanedResponse.match(/"verdict":\s*"([^"]*)"/i);
-                        const reasoningMatch = cleanedResponse.match(/"reasoning":\s*"([^"]*)"/i);
-
-                        const extractedSummary = summaryMatch ? summaryMatch[1] : 'Partial data extraction failed';
-                        const extractedVerdict = verdictMatch ? verdictMatch[1] : 'Error';
-                        const extractedReasoning = reasoningMatch ? reasoningMatch[1] : 'No reasoning extracted';
-
-                        return {
-                            summary: extractedSummary,
-                            verdict: extractedVerdict,
-                            reasoning: extractedReasoning,
-                            error: 'JSON parse failed, partial data extracted'
-                        };
-                    } catch (extractionError) {
-                        console.error("Fallback extraction failed:", extractionError)
-                        return {
-                            summary: cleanedResponse,
-                            verdict: 'Error',
-                            error: 'Failed to parse JSON and extract partial data',
-                            reasoning: 'Failed to parse JSON and extract partial data'
-                        };
-                    }
-                }
-            } else {
-                console.error('Empty response, retrying...');
-            }
-        } catch (error) {
-            console.error(`Error during generation (attempt ${attempt + 1}):`, error);
-            await new Promise((resolve) => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
+          // If the JSON is still failing to be parsed, then try to extract data
+          return {
+            summary: `Failed to generate a complete response from profile text.`,
+            verdict: "Not Suitable",
+            reasoning: 'Failed to extract sufficient content from response for evaluation, could be malformed json',
+          }
         }
+      } else {
+        console.error('Empty response, retrying...');
+      }
+    } catch (error) {
+      console.error(`Error during generation (attempt ${attempt + 1}):`, error);
+      await new Promise((resolve) => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
     }
-    throw new Error('Max retries reached');
+  }
+  throw new Error('Max retries reached');
 }
 
 function convertTextToJson(profileText: string): string {
-    const jsonStructure = {
-        profile: profileText
-    };
-    return JSON.stringify(jsonStructure);
+  const cleanedProfileText = profileText.replace(/\\n/g, ' ');
+
+  const jsonStructure = {
+    profile: cleanedProfileText
+  };
+  return JSON.stringify(jsonStructure);
 }
 
-function generateEvaluationPrompt(role: string, profileJson: string): string {
-    return `
-You are an expert evaluator. Analyze the following LinkedIn resume and provide:
-1. A detailed summary of the key qualifications and experience
-2. A clear verdict on whether the candidate is suitable for the ${role} role
+function generateEvaluationPrompt(profileText: string): string {
+  const criteria = `
+        - 3+ years professional experience
+        - Strong skills in either Generative AI (NLP, LLM, etc.) or UI/UX
+        - Leadership position (Team Lead, Manager, Technical Architect)
+        - Experience in a well-established company
+        - Domain expertise in the relevant field (Generative AI or UI/UX)
+        - Contributions to industry events/publications
+    `;
+  return `
+        Evaluate this profile for a Judge role based on these criteria:
+        ${criteria}
 
-Profile: ${profileJson}
+        Profile: ${profileText}
 
-Format your response STRICTLY as a VALID JSON object with the following structure.  Ensure there are no extra characters or text outside the JSON structure. Specify the data type.  Follow this template precisely.
+        Based on the above criteria, provide a brief summary of the profile, then determine if the candidate is Suitable or Not Suitable for a Judge role, specifying if suitable for a Generative AI judge, a UI/UX judge, or neither. Return "Not Suitable" if it does not have a json structure.
+        Return "Not Suitable" if you cannot ascertain if the profile meets the judge criteria.
 
-\`\`\`json
-{
-  "summary": "Detailed summary of the profile (string)",
-  "verdict": "Suitable" or "Not Suitable" (string)",
-  "reasoning": "Detailed explanation for the verdict (string)"
-}
-\`\`\`
+        Please adhere to these guidelines strictly:
+        - The summary should highlight the profile's relevant skills and experience, focusing on the criteria.
+        - The verdict should directly state one of the following:
+          - "Suitable for Generative AI Judge" if the profile primarily showcases AI/Generative AI skills and experience.
+          - "Suitable for UI/UX Judge" if the profile primarily showcases UI/UX skills and experience.
+          - "Not Suitable" if the profile lacks sufficient evidence of expertise in either Generative AI or UI/UX, as defined in the criteria.
+        - If a candidate has experience in both UI/UX and AI, please pick the one that stands out more.
+        - Do not include other fields other than what is asked
+        - If for some reason you cannot assess them then state "Not Suitable"
 
-Ensure the response is valid JSON and contains all required fields.
-`;
+        Format your response EXACTLY and ensure valid json as a JSON object with the following keys:
+        {{"summary" : "string - summary of the profile.", "verdict" : "string - one of the pre-defined Verdict types mentioned above", "reasoning" : "Concise explanation for the verdict."}}
+    `;
 }
 
 export async function POST(request: Request) {
-    try {
-        const formData = await request.formData();
-        const file = formData.get('file');
-        const role = (formData.get('role') as string) || 'judge';
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file');
 
-        if (!file || typeof file === 'string') {
-            return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-        }
+    if (!file || typeof file === 'string') {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    }
 
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-        const pdfParser = new pdf2json();
-        const profileText = await new Promise<string>((resolve, reject) => {
-            let text = '';
+    // Create a new instance of pdf2json *within* the request scope
+    const pdfParser = new pdf2json();
+    let profileText = '';
 
-            pdfParser.on('pdfParser_dataReady', (pdfData) => {
-                try {
-                    text = pdfData.Pages.reduce((acc: string, page: any) => {
-                        return acc + page.Texts.map((text: any) =>
-                            decodeURIComponent(text.R[0].T)
-                        ).join(' ');
-                    }, '');
-                    resolve(text);
-                } catch (error) {
-                    reject(error);
-                }
-            });
-
-            pdfParser.on('pdfParser_dataError', (error) => {
+    profileText = await new Promise<string>((resolve, reject) => {
+        pdfParser.on('pdfParser_dataReady', (pdfData) => {
+            try {
+                const text = pdfData.Pages.reduce((acc: string, page: any) => {
+                    return acc + page.Texts.map((text: any) => decodeURIComponent(text.R[0].T)).join(' ');
+                }, '');
+                resolve(text);
+            } catch (error) {
                 reject(error);
-            });
-
-            pdfParser.parseBuffer(buffer);
+            }
         });
 
-        if (!profileText || profileText.trim() === '') {
-            return NextResponse.json({ error: 'No text extracted from PDF' }, { status: 400 });
-        }
+        pdfParser.on('pdfParser_dataError', (error) => {
+            reject(error);
+        });
 
-        const profileJson = convertTextToJson(profileText);
-        const evaluationPrompt = generateEvaluationPrompt(role, profileJson);
-        const evaluation = await evaluateWithRetry(evaluationPrompt);
+        pdfParser.parseBuffer(buffer);
+    });
 
-        if (!evaluation || !evaluation.summary || !evaluation.verdict) {
-            return NextResponse.json(
+    if (!profileText || profileText.trim() === '') {
+        return NextResponse.json({ error: 'No text extracted from PDF' }, { status: 400 });
+    }
+
+    const profileJson = convertTextToJson(profileText);
+    const evaluationPrompt = generateEvaluationPrompt(profileJson);
+    const evaluation = await evaluateWithRetry(evaluationPrompt);
+
+    if (!evaluation || !evaluation.summary || !evaluation.verdict) {
+        console.error("Evaluation failed, the model is unable to properly");
+        return NextResponse.json(
                 {
                     error: 'Error processing request',
                     message: 'The evaluation data is incomplete or missing',
                     evaluation: {
-                        summary: 'Error: Incomplete evaluation data',
-                        verdict: 'Error',
-                        reasoning: 'The evaluation response was incomplete or missing required fields'
+                        summary: "Unable to Evaluate",
+                        verdict: "Not Suitable",
+                        reasoning: "Unable to find evaluation result and therefore returning Not Suitable",
                     }
                 },
                 { status: 500 }
             );
-        }
-
-        return NextResponse.json({
-            evaluation: {
-                summary: evaluation.summary,
-                verdict: evaluation.verdict,
-                reasoning: evaluation.reasoning || 'No reasoning provided'
-            }
-        });
-    } catch (error: any) {
-        console.error('Error evaluating profile:', error);
-        return NextResponse.json(
-            {
-                error: 'Error processing request',
-                message: error.message,
-                evaluation: {
-                    summary: 'Error occurred during evaluation',
-                    verdict: 'Error',
-                    reasoning: error.message
-                }
-            },
-            { status: 500 }
-        );
     }
+  
+
+    return NextResponse.json({
+      evaluation: {
+        summary: evaluation.summary.replace(/\\n/g, ' '),
+        verdict: evaluation.verdict.replace(/\\n/g, ' '),
+        reasoning: evaluation.reasoning.replace(/\\n/g, ' ') || 'No reasoning provided'
+      }
+    });
+  } catch (error: any) {
+    console.error('Error evaluating profile:', error);
+    return NextResponse.json(
+      {
+        error: 'Error processing request',
+        message: error.message,
+        evaluation: {
+          summary: 'Error occurred during evaluation',
+          verdict: 'Error',
+          reasoning: error.message
+        }
+      },
+      { status: 500 }
+    );
+  }
 }

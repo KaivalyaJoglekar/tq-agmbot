@@ -2,25 +2,21 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import styled, { css, keyframes } from "styled-components"; // Import keyframes
+import styled, { css, keyframes } from "styled-components";
 import dynamic from "next/dynamic";
 import Orb from "../app/components/Orb";
 import Head from "next/head";
-import { saveAs } from "file-saver";
 
-// Preloader Component
 const botAvatar = "/robo.svg";
 const favicon = "/favicon.ico";
 const sendButtonSrc = "/sendbutton.png";
 
-// Keyframes for a subtle pulse animation
 const pulseAnimation = keyframes`
   0% { transform: scale(1); }
   50% { transform: scale(1.03); }
   100% { transform: scale(1); }
 `;
 
-// Keyframes for twinkling border
 const twinklingBorder = keyframes`
   0% { border-color: red; }
   50% { border-color: blue; }
@@ -28,7 +24,6 @@ const twinklingBorder = keyframes`
 `;
 
 const StyledAirplane = styled.button`
-  /* Hidden - we'll use a custom button */
   display: none;
 `;
 
@@ -37,19 +32,18 @@ const StyledAirplaneContainer = styled.div`
   display: flex;
   align-items: center;
   width: 100%;
-  border: 1px solid white; /* White border */
+  border: 1px solid white;
   border-radius: 20px;
   padding: 5px;
-  animation: ${twinklingBorder} 5s linear infinite; /* Apply twinkling animation */
+  animation: ${twinklingBorder} 5s linear infinite;
 
-  /* Responsive adjustments */
   @media (max-width: 600px) {
     padding: 3px;
   }
 
   .input-field {
     flex: 1;
-    padding-right: 30px; /* Make space for the custom send button */
+    padding-right: 30px;
   }
 `;
 
@@ -57,32 +51,27 @@ const FileInputWrapper = styled.div`
   display: flex;
   align-items: center;
   width: 100%;
-  flex: 1; /* Takes remaining space */
+  flex: 1;
 `;
 
 const ChoosePdfButton = styled.label`
-  background-color: transparent; /* No background */
+  background-color: transparent;
   color: white;
-  padding: 10px 16px; /* Slightly more padding */
-  border: 1px solid white; /* White border */
-  border-radius: 25px; /* More rounded corners */
+  padding: 10px 16px;
+  border: 1px solid white;
+  border-radius: 25px;
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s ease;
   display: inline-block;
-  white-space: nowrap; /* Prevent text from wrapping */
-  overflow: hidden; /* Ensure text doesn't overflow */
-  text-overflow: ellipsis; /* Add ellipsis (...) if text overflows */
-  max-width: 150px; /* Limit the button's width */
-  text-align: center; /* Center the text */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+  text-align: center;
 
   &:hover {
-    background-color: rgba(
-      121,
-      82,
-      179,
-      0.3
-    ); /* Purple with slight transparency */
+    background-color: rgba(121, 82, 179, 0.3);
   }
 
   @media (max-width: 600px) {
@@ -93,12 +82,12 @@ const ChoosePdfButton = styled.label`
 
 const FileChosenText = styled.span`
   font-size: 14px;
-  color: #d0d0d0; /* Light gray for visibility */
+  color: #d0d0d0;
   flex: 1;
-  overflow: hidden; /* Hide overflowing text */
-  white-space: nowrap; /* Prevent wrapping */
-  text-overflow: ellipsis; /* Add ellipsis (...) if text is too long */
-  margin-left: 10px; /* Add some spacing */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-left: 10px;
 
   @media (max-width: 600px) {
     font-size: 12px;
@@ -114,21 +103,25 @@ const TextInput = styled.input`
   padding: 10px;
   width: 100%;
   flex: 1;
-  padding-right: 40px; /* Space for the send button */
+  padding-right: 40px;
 
   &::placeholder {
     color: #d0d0d0;
   }
 
   @media (max-width: 600px) {
-    font-size: 12px; /* Adjust font size for mobile */
-    padding: 8px; /* Adjust padding for mobile */
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  @media (max-width: 600px) {
+    font-size: 16px;
   }
 `;
 
 const SendButton = styled.button`
   position: absolute;
-  right: 5px; /* Position from the right */
+  right: 5px;
   top: 50%;
   transform: translateY(-50%);
   background-color: transparent;
@@ -137,7 +130,7 @@ const SendButton = styled.button`
   cursor: pointer;
 
   img {
-    width: 24px; /* Size of your send button image */
+    width: 24px;
     height: 24px;
   }
 `;
@@ -152,8 +145,8 @@ const StyledPreloaderWrapper = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 200px; /* Even Further Increased width */
-    height: 200px; /* Even Further Increased height */
+    width: 200px;
+    height: 200px;
     margin: 130px 0;
     perspective: 780px;
   }
@@ -237,7 +230,7 @@ const Loader = () => {
 
 const DynamicLoader = dynamic(() => Promise.resolve(Loader), {
   ssr: false,
-  loading: () => null, // Remove placeholder text during SSR
+  loading: () => null,
 });
 
 const LandingPageWrapper = styled.div`
@@ -252,7 +245,7 @@ const LandingPageWrapper = styled.div`
   overflow: hidden;
 
   @media (max-width: 600px) {
-    padding: 10px; /* Reduce padding on smaller screens */
+    padding: 10px;
   }
 `;
 
@@ -284,16 +277,14 @@ const StyledOrbContainer = styled.div`
     opacity: 1;
   }
 
-  /* Responsive adjustments */
   @media (max-width: 768px) {
-    //Adjust for tablet sizes
     width: 75vh;
     height: 75vh;
   }
 
   @media (max-width: 600px) {
-    width: 85vw; //Switch from vh to vw
-    height: 85vw; //Switch from vh to vw
+    width: 85vw;
+    height: 85vw;
     max-width: unset;
     max-height: unset;
   }
@@ -324,7 +315,7 @@ const ModeButton = styled.button`
   @media (max-width: 600px) {
     font-size: 15px;
     padding: 12px 24px;
-    margin: 5px; /* Adjust spacing on smaller screens */
+    margin: 5px;
   }
 
   ${(props) =>
@@ -343,35 +334,30 @@ const ModeButton = styled.button`
 `;
 
 const BackButton = styled.button`
-  background-color: transparent; /* Transparent background */
+  background-color: transparent;
   color: white;
-  padding: 6px 10px; /* Smaller padding */
-  border: 1px solid white; /* White border */
+  padding: 6px 10px;
+  border: 1px solid white;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 13px; /* Smaller font */
-  margin-top: 10px; /* Reduced top margin */
+  font-size: 13px;
+  margin-top: 10px;
   transition: background-color 0.3s ease;
-  position: absolute; /* Position to the right */
-  top: 5px; /* Smaller top */
-  right: 5px; /* Smaller right */
+  position: absolute;
+  top: 5px;
+  right: 5px;
 
   &:hover {
-    background-color: rgba(
-      121,
-      82,
-      179,
-      0.3
-    ); /* Slight purple background on hover */
+    background-color: rgba(121, 82, 179, 0.3);
   }
 
   @media (max-width: 768px) {
-    display: none; /* Hide on smaller screens */
+    display: none;
   }
 `;
 
 const WelcomeText = styled.h1`
-  font-size: 2.8rem; //Reduce base font size
+  font-size: 2.8rem;
   font-weight: bold;
   color: white;
   margin-bottom: 5px;
@@ -384,15 +370,16 @@ const WelcomeText = styled.h1`
   word-break: break-word;
 
   @media (max-width: 600px) {
-    font-size: 2.2rem; /* Further Reduced font size for better fit on small screens */
+    font-size: 2.0rem; /* Further Reduced font size for better fit on small screens */
     padding: 0 10px;
+     line-height: 1.2; /* adjust the line height as needed */
   }
 `;
 
 const TaglineText = styled.p`
-  font-size: 1.2rem; //Reduce base font size
+  font-size: 1.2rem;
   color: #d0d0d0;
-  margin-bottom: 20px; //Reduce space
+  margin-bottom: 20px;
   text-align: center;
   padding: 0 20px;
   line-height: 1.5;
@@ -404,7 +391,7 @@ const TaglineText = styled.p`
   word-break: break-word;
 
   @media (max-width: 600px) {
-    font-size: 1rem; /* Further Reduced font size for better fit on small screens */
+    font-size: 1rem;
     padding: 0 10px;
   }
 `;
@@ -416,7 +403,7 @@ const LogoContainer = styled.div`
   z-index: 10;
 
   @media (max-width: 600px) {
-    top: 5px; /* Adjust position on smaller screens */
+    top: 5px;
     left: 5px;
   }
 `;
@@ -426,7 +413,7 @@ const LogoImage = styled(Image)`
   height: 75px;
 
   @media (max-width: 600px) {
-    width: 50px; /* Adjust size on smaller screens */
+    width: 50px;
     height: 50px;
   }
 `;
@@ -439,11 +426,113 @@ const ButtonContainer = styled.div`
   position: relative;
   z-index: 2;
   margin-top: auto;
-  padding-bottom: 10px; //Add some bottom spacing
+  padding-bottom: 10px;
 
   @media (max-width: 600px) {
-    justify-content: space-around; //Spread the buttons out a bit
+    justify-content: center;
+    align-items: center;
     padding-bottom: 5px;
+  }
+`;
+
+const HamburgerButton = styled.button`
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 2rem;
+  height: 2rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 10;
+
+  &:focus {
+    outline: none;
+  }
+
+  div {
+    width: 2rem;
+    height: 0.25rem;
+    background: white;
+    border-radius: 10px;
+    transition: all 0.3s linear;
+    position: relative;
+    transform-origin: 1px;
+  }
+
+  &.open div:first-child {
+    transform: rotate(45deg);
+  }
+
+  &.open div:nth-child(2) {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  &.open div:nth-child(3) {
+    transform: rotate(-45deg);
+  }
+
+  @media (max-width: 600px) {
+    display: flex;
+  }
+`;
+
+const CenteredTitle = styled.h1`
+  text-align: center;
+  font-size: 2rem;
+  font-weight: bold;
+  color: white;
+  margin-left: auto;
+  margin-right: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80%; /* Adjust for smaller screens */
+
+  @media (max-width: 600px) {
+    font-size: 1.5rem; /* Further Reduced font size for better fit on small screens */
+    max-width: 90%; /* Further adjust */
+     line-height: 1.2; /* Added line-height for wrapping */
+  }
+`;
+
+const MobileButtonContainer = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  padding-bottom: 20px;
+  margin-top: 20px;
+
+  @media (min-width: 601px) {
+    display: none;
+  }
+`;
+
+const DesktopButtonContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    position: relative;
+    z-index: 2;
+
+    @media (max-width: 600px) {
+        display: none;
+    }
+`;
+
+const BotAvatarImage = styled(Image)`
+  width: 32px;
+  height: 32px;
+
+  @media (max-width: 600px) {
+    width: 24px; /* Reduced size on mobile */
+    height: 24px; /* Reduced size on mobile */
   }
 `;
 
@@ -505,7 +594,7 @@ function Home() {
   }
 
   const switchMode = (newMode) => {
-    if (loading) return; // Prevent switching modes while loading
+    if (loading) return;
     setMode(newMode);
     setMessages([
       {
@@ -543,6 +632,7 @@ function Home() {
   };
 
   useEffect(() => {
+    window.scrollTo(0, 0); // Prevent auto-scrolling on route change
     document.title = "AGM ChatBot";
     const timeoutId = setTimeout(() => {
       setAppLoading(false);
@@ -601,7 +691,7 @@ function Home() {
         let errorMessage = response.statusText;
         try {
           const errorData = await response.json();
-          errorMessage = errorData?.error || response.statusText; // Check for 'error' field
+          errorMessage = errorData?.error || response.statusText;
         } catch (jsonError) {
           console.error("Failed to parse error JSON:", jsonError);
           errorMessage = "An unexpected error occurred. Please try again.";
@@ -721,9 +811,12 @@ function Home() {
   };
 
   const getTitle = () => {
-    return mode === "profile"
-      ? "AGM Profile Evaluator"
-      : "AGM ChatBot Text Generator";
+    if (mode === "profile") {
+      return "Profile Evaluator";
+    } else if (mode === "text") {
+      return "Text Generator";
+    }
+    return "AGM ChatBot";
   };
 
   const landingPageText = (
@@ -744,6 +837,10 @@ function Home() {
       <Head>
         <link rel='icon' href={favicon} />
         <title>AGM ChatBot</title>
+        <meta
+          name='viewport'
+          content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+        />
       </Head>
       {appLoading && (
         <div className='fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black z-50'>
@@ -753,7 +850,6 @@ function Home() {
       <div
         className='flex flex-col h-screen text-white'
         style={{ backgroundColor: "transparent" }}>
-        {/* Landing Page */}
         {!mode ? (
           <LandingPageWrapper>
             <LogoContainer>
@@ -769,15 +865,17 @@ function Home() {
                   hue={350}
                   hue2={230}
                   useTwoHues={true}
-                  forceHoverState={orbHovered} // Enforce hover state
+                  forceHoverState={orbHovered}
                 />
               </OrbWrapper>
               <WelcomeText>Welcome to AGM Chatbot</WelcomeText>
               <TaglineText>{landingPageText}</TaglineText>
             </StyledOrbContainer>
 
-            <ButtonContainer>
-              <ModeButton onClick={() => switchMode("text")} disabled={loading}>
+            <DesktopButtonContainer>
+              <ModeButton
+                onClick={() => switchMode("text")}
+                disabled={loading}>
                 Chat
               </ModeButton>
               <ModeButton
@@ -785,35 +883,43 @@ function Home() {
                 disabled={loading}>
                 Profile Evaluator
               </ModeButton>
-            </ButtonContainer>
+            </DesktopButtonContainer>
+
+            <MobileButtonContainer>
+              <ModeButton
+                onClick={() => switchMode("text")}
+                disabled={loading}>
+                Chat
+              </ModeButton>
+              <ModeButton
+                onClick={() => switchMode("profile")}
+                disabled={loading}>
+                Profile Evaluator
+              </ModeButton>
+            </MobileButtonContainer>
           </LandingPageWrapper>
         ) : (
           <>
-            {/* Back to Main Page Button */}
-            <div style={{ position: "relative" }}>
+            <div className='w-full flex justify-between items-center p-2'>
               <LogoContainer>
                 <LogoImage src={favicon} alt='Logo' width={50} height={50} />
               </LogoContainer>
+              <CenteredTitle>{getTitle()}</CenteredTitle>
+              <HamburgerButton
+                onClick={handleMobileMenuToggle}
+                className={mobileMenuOpen ? "open" : ""}>
+                <div></div>
+                <div></div>
+                <div></div>
+              </HamburgerButton>
+            </div>
 
+            <div style={{ position: "relative" }}>
               <BackButton onClick={goToLandingPage}>
                 Back to Main Page
               </BackButton>
             </div>
 
-            {/* Mobile Menu Button */}
-            <button
-              className={`mobile-menu-button ${
-                mobileMenuOpen ? "active" : ""
-              } fixed top-6 right-6 z-20 md:hidden`}
-              onClick={handleMobileMenuToggle}
-              aria-label='Toggle Menu'
-              ref={mobileMenuButtonRef}>
-              <span className='block w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-in-out origin-top-left'></span>
-              <span className='block w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-in-out'></span>
-              <span className='block w-6 h-0.5 bg-white rounded-full transition-all duration-300 ease-in-out origin-bottom-left'></span>
-            </button>
-
-            {/* Mobile Menu */}
             <div
               className={`mobile-menu ${
                 mobileMenuOpen ? "active" : ""
@@ -834,14 +940,7 @@ function Home() {
               </button>
             </div>
 
-            {/* Main Content */}
             <div className='container mx-auto p-4 flex flex-col h-full'>
-              {/* Title */}
-              <h1 className='title text-2xl font-semibold text-center mb-4'>
-                {getTitle()}
-              </h1>
-
-              {/* Messages Container */}
               <div
                 className='messages-container flex-1 overflow-y-auto p-4 rounded-3xl bg-black bg-opacity-20'
                 ref={messagesContainerRef}
@@ -853,7 +952,7 @@ function Home() {
                       message.sender === "user" ? "user" : "bot"
                     }`}>
                     {message.sender === "bot" && (
-                      <Image
+                      <BotAvatarImage
                         src={botAvatar}
                         alt='Bot Avatar'
                         width={32}
@@ -864,7 +963,6 @@ function Home() {
                     <div className='break-words'>{message.text}</div>
                   </div>
                 ))}
-                {/* Loading Indicator */}
                 {loading && (
                   <div className='loading'>
                     <div className='loading-content'>
@@ -888,7 +986,6 @@ function Home() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Form */}
               <form
                 onSubmit={
                   mode === "profile" ? handleProfileSubmit : handleSubmit
@@ -906,7 +1003,7 @@ function Home() {
                         accept='.pdf'
                         onChange={handleProfileFileChange}
                         ref={fileInputRef}
-                        onKeyDown={handleProfileKeyDown} /* added keydown */
+                        onKeyDown={handleProfileKeyDown}
                         autoComplete='off'
                       />
                       <FileChosenText>
@@ -954,7 +1051,6 @@ function Home() {
                 )}
               </form>
 
-              {/* Footer */}
               <div className='footer text-center mt-4'>
                 Made with ❤️ by Kaivalya
               </div>
